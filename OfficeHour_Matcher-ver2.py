@@ -77,15 +77,30 @@ def fetch_and_clean_schedule(url):
                 df = df.iloc[:, :8].copy()
                 df.columns = ['節次','一','二','三','四','五','六','日']
                 df = df.fillna('').astype(str)
+                
+                # 1. 確保只留下包含「第」或數字的行
                 df = df[df['節次'].str.contains('第|\d', na=False)]
 
+                # 🌟 2. 新增：排除第1節與第5節 (包含數字與國字)
+                # 使用 ~ 代表「不包含」，| 代表「或」
+                exclude_pattern = '1節|5節|一節|五節'
+                df = df[~df['節次'].str.contains(exclude_pattern, na=False)]
+
+                # 3. 定義時間轉換函數
                 def add_time(x):
+                    # 這裡處理 k 時要小心，如果是 "第一節" 會變成 "一"
                     k = x.replace("第","").replace("節","").strip()
+                    # 如果你的 TIME_MAP 是用數字當 Key {'1': '08:10...'}
+                    # 下面這行會根據 k 找到對應時間
                     return f"{x} {TIME_MAP[k]}" if k in TIME_MAP else x
 
+                # 4. 套用時間標記
                 df['節次'] = df['節次'].apply(add_time)
+                
                 return df.reset_index(drop=True)
-    except:
+    except Exception as e:
+        # 加上 print(e) 方便你偵錯
+        print(f"Fetch Error: {e}")
         return None
 
 def find_all_slots(df_a, df_b):
@@ -101,7 +116,7 @@ def find_all_slots(df_a, df_b):
         r2 = df_b.iloc[i]
         slot = row['節次']
 
-        if any(x in slot for x in ["第1節","第5節","第一節","第五節","1","5"]):
+        if any(x in slot for x in ["第1節","第5節","第一節","第五節"]):
             continue
 
         for d in days:
