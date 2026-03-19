@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import gspread
+from datetime import datetime, timedelta
 
 # --- 0. 基本配置 ---
 st.set_page_config(page_title="SmartSlot | 淡江智慧媒合", layout="wide", page_icon="🏫")
@@ -26,8 +27,10 @@ def load_data():
 
 def save_mapping(case_id, a, b, slots):
     sheet = connect_gsheet()
+    now_tw = pd.Timestamp.now(tz='Asia/Taipei').strftime('%Y-%m-%d %H:%M:%S')
+    
     sheet.append_row([
-        pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
+        now_tw,
         str(case_id),
         a,
         b,
@@ -39,8 +42,10 @@ def save_mapping(case_id, a, b, slots):
 
 def save_final(case_id, a, b, slots, day, slot, is_rec):
     sheet = connect_gsheet()
+    now_tw = pd.Timestamp.now(tz='Asia/Taipei').strftime('%Y-%m-%d %H:%M:%S')
+    
     sheet.append_row([
-        pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
+        now_tw,
         str(case_id),
         a,
         b,
