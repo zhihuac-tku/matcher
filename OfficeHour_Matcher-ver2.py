@@ -69,60 +69,71 @@ TIME_MAP = {
 # --- 課表處理 ---
 def fetch_and_clean_schedule(url):
     try:
-        response = requests.get(url, timeout=10)
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(url, headers=headers, timeout=10)
+        response.encoding = 'utf-8'
         dfs = pd.read_html(response.text)
-
+        
+        target_df = None
         for df in dfs:
+            # 判斷是否為主要課表表格（通常列數較多）
             if len(df) > 10:
-                df = df.iloc[:, :8].copy()
-                df.columns = ['節次','一','二','三','四','五','六','日']
-                df = df.fillna('').astype(str)
-                
-                # 1. 確保只留下包含「第」或數字的行
-                df = df[df['節次'].str.contains('第|\d', na=False)]
+                target_df = df
+                break
+        
+        if target_df is not None:
+            # 1. 基本清洗與欄位命名
+            df_clean = target_df.iloc[:, :8].copy()
+            df_clean.columns = ['節次', '一', '二', '三', '四', '五', '六', '日']
+            df_clean = df_clean.fillna('').astype(str)
+            
+            # 2. 過濾掉非節次的雜訊列
+            df_clean = df_clean[df_clean['節次'].str.contains('第|\d', na=False)]
 
-                # 🌟 2. 新增：排除第1節與第5節 (包含數字與國字)
-                # 使用 ~ 代表「不包含」，| 代表「或」
-                exclude_pattern = '1節|5節|一節|五節'
-                df = df[~df['節次'].str.contains(exclude_pattern, na=False)]
+            # 🌟 3. 重點：在這裡直接排除 第1節 與 第5節 (趁還沒加時間資訊前)
+            # 使用 ~ 代表排除，| 代表或
+            exclude_pattern = '1節|5節|一節|五節'
+            df_clean = df_clean[~df_clean['節次'].str.contains(exclude_pattern, na=False)]
 
-                # 3. 定義時間轉換函數
-                def add_time(x):
-                    # 這裡處理 k 時要小心，如果是 "第一節" 會變成 "一"
-                    k = x.replace("第","").replace("節","").strip()
-                    # 如果你的 TIME_MAP 是用數字當 Key {'1': '08:10...'}
-                    # 下面這行會根據 k 找到對應時間
-                    return f"{x} {TIME_MAP[k]}" if k in TIME_MAP else x
-
-                # 4. 套用時間標記
-                df['節次'] = df['節次'].apply(add_time)
-                
-                return df.reset_index(drop=True)
-    except Exception as e:
-        # 加上 print(e) 方便你偵錯
-        print(f"Fetch Error: {e}")
+            # 4. 定義補全時間的函數
+            def add_time_info(slot_text):
+                # 取得純數字或國字部分，例如 "第11節" -> "11"
+                st_clean = slot_text.strip().replace("第", "").replace("節", "")
+                if st_clean in TIME_MAP:
+                    return f"{slot_text} {TIME_MAP[st_clean]}"
+                return slot_text
+            
+            # 5. 最後才套用時間標記（這不會影響過濾了，因為過濾已經做完了）
+            df_clean['節次'] = df_clean['節次'].apply(add_time_info)
+            
+            return df_clean.reset_index(drop=True)
+        return None
+    except:
         return None
 
 def find_all_slots(df_a, df_b):
     res = []
-    days = ['一','二','三','四','五']
+    days = ['一', '二', '三', '四', '五']
 
     def ok(v):
-        v = v.replace('nan','').replace('None','').replace(' ','')
-        return v=='' or v=='◎' or ('◎在校研究' in v and len(v)<10)
+        v = v.replace('nan', '').replace('None', '').replace(' ', '')
+        return v == '' or v == '◎' or ('◎在校研究' in v and len(v) < 10)
 
-    for i,row in df_a.iterrows():
-        if i>=len(df_b): break
+    for i, row in df_a.iterrows():
+        # 確保 A 跟 B 的行數對齊
+        if i >= len(df_b): break
         r2 = df_b.iloc[i]
         slot = row['節次']
 
-        if any(x in slot for x in ["第1節","第5節","第一節","第五節"]):
+        # 這裡做雙重保險排除（雖然前面 fetch 已經過濾掉，但留著不影響）
+        if any(x in slot for x in ["第1節", "第5節", "第一節", "第五節"]):
             continue
 
         for d in days:
             if ok(row[d]) and ok(r2[d]):
                 res.append(f"星期{d} {slot}")
-            if len(res)>=6: return res
+            # 抓到 6 個建議後就收工
+            if len(res) >= 6: return res
     return res
 
 # --- UI ---
