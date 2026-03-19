@@ -67,6 +67,7 @@ TIME_MAP = {
 }
 
 # --- 課表處理 ---
+# --- 1. 定義抓取與清洗函數 ---
 def fetch_and_clean_schedule(url):
     try:
         headers = {"User-Agent": "Mozilla/5.0"}
@@ -76,65 +77,94 @@ def fetch_and_clean_schedule(url):
         
         target_df = None
         for df in dfs:
-            # 判斷是否為主要課表表格（通常列數較多）
             if len(df) > 10:
                 target_df = df
                 break
         
         if target_df is not None:
-            # 1. 基本清洗與欄位命名
             df_clean = target_df.iloc[:, :8].copy()
             df_clean.columns = ['節次', '一', '二', '三', '四', '五', '六', '日']
             df_clean = df_clean.fillna('').astype(str)
             
-            # 2. 過濾掉非節次的雜訊列
-            df_clean = df_clean[df_clean['節次'].str.contains('第|\d', na=False)]
+            # 過濾掉非節次的列 (只保留包含「第」或數字的)
+            df_clean = df_clean[df_clean['節次'].str.contains('第|\d', na=False)].reset_index(drop=True)
 
-            # 🌟 3. 重點：在這裡直接排除 第1節 與 第5節 (趁還沒加時間資訊前)
-            # 使用 ~ 代表排除，| 代表或
-            exclude_pattern = '1節|5節|一節|五節'
-            df_clean = df_clean[~df_clean['節次'].str.contains(exclude_pattern, na=False)]
-
-            # 4. 定義補全時間的函數
+            # 補全時間資訊
             def add_time_info(slot_text):
-                # 取得純數字或國字部分，例如 "第11節" -> "11"
                 st_clean = slot_text.strip().replace("第", "").replace("節", "")
                 if st_clean in TIME_MAP:
                     return f"{slot_text} {TIME_MAP[st_clean]}"
                 return slot_text
             
-            # 5. 最後才套用時間標記（這不會影響過濾了，因為過濾已經做完了）
             df_clean['節次'] = df_clean['節次'].apply(add_time_info)
-            
-            return df_clean.reset_index(drop=True)
+            return df_clean
         return None
     except:
         return None
 
+# --- 2. 自動比對邏輯 (昨天成功的版本) ---
 def find_all_slots(df_a, df_b):
-    res = []
+    all_slots = []
     days = ['一', '二', '三', '四', '五']
+    
+    # 嚴謹的排除邏輯
+    def should_exclude(text):
+        # 先移除所有空白，避免 "第 1 節" 這種隱形空格導致比對失敗
+        t = text.replace(" ", "")
+        
+        # 1. 檢查國字與標準格式
+        bad_keywords = ["第1節", "第5節", "第一節", "第五節"]
+        if any(k in t for k in bad_keywords): 
+            return True
+            
+        # 2. 處理可能出現的 "1(08:10..." 或 "5(08:10..." 格式
+        if t.startswith("1(") or t.startswith("5("): 
+            return True
+            
+        # 3. 處理純數字情況
+        if t == "1" or t == "5": 
+            return True
+            
+        return False
 
-    def ok(v):
-        v = v.replace('nan', '').replace('None', '').replace(' ', '')
-        return v == '' or v == '◎' or ('◎在校研究' in v and len(v) < 10)
-
-    for i, row in df_a.iterrows():
-        # 確保 A 跟 B 的行數對齊
-        if i >= len(df_b): break
-        r2 = df_b.iloc[i]
-        slot = row['節次']
-
-        # 這裡做雙重保險排除（雖然前面 fetch 已經過濾掉，但留著不影響）
-        if any(x in slot for x in ["第1節", "第5節", "第一節", "第五節"]):
+    for idx, row_a in df_a.iterrows():
+        if idx >= len(df_b): break
+        row_b = df_b.iloc[idx]
+        slot_full_name = str(row_a['節次']).strip()
+        
+        # 執行排除檢查
+        if should_exclude(slot_full_name):
             continue
-
-        for d in days:
-            if ok(row[d]) and ok(r2[d]):
-                res.append(f"星期{d} {slot}")
-            # 抓到 6 個建議後就收工
-            if len(res) >= 6: return res
-    return res
+        
+        for day in days:
+            val_a = str(row_a[day]).strip()
+            val_b = str(row_b[day]).strip()
+            
+            def is_available(v):
+                # 移除所有空白後的純文字
+                v_clean = v.replace('nan', '').replace('None', '').replace(' ', '').strip()
+                
+                # 情況 1：完全空白
+                if v_clean == '':
+                    return True
+                
+                # 情況 2：只有單獨一個 ◎ 
+                if v_clean == '◎':
+                    return True
+                
+                # 情況 3：包含「◎在校研究」但排除掉有其他課程資訊的情況
+                if '◎在校研究' in v_clean and len(v_clean) < 10:
+                    return True
+                
+                return False
+            
+            if is_available(val_a) and is_available(val_b):
+                all_slots.append(f"星期{day} {slot_full_name}")
+                
+            if len(all_slots) >= 6:
+                return all_slots
+                
+    return all_slots
 
 # --- UI ---
 st.sidebar.title("🧭 系統選單")
