@@ -101,7 +101,7 @@ def find_all_slots(df_a, df_b):
         r2 = df_b.iloc[i]
         slot = row['節次']
 
-        if any(x in slot for x in ["第1節","第5節","第一節","第五節"]):
+        if any(x in slot for x in ["第1節","第5節","第一節","第五節","1","5"]):
             continue
 
         for d in days:
