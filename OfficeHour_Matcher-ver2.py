@@ -2,23 +2,19 @@ import streamlit as st
 import pandas as pd
 import requests
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
 # --- 0. 基本配置 ---
 st.set_page_config(page_title="SmartSlot | 淡江智慧媒合", layout="wide", page_icon="🏫")
 
 # --- Google Sheets ---
 def connect_gsheet():
-    scope = [
-        "https://spreadsheets.google.com/feeds",
-        "https://www.googleapis.com/auth/drive"
-    ]
-
-    creds_dict = st.secrets["gcp_service_account"]
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-    client = gspread.authorize(creds)
-
-    return client.open("TKU_Match_Log").worksheet("CaseMapping")
+    try:
+        # 直接使用 gspread 內建的功能，它會自動處理驗證
+        client = gspread.service_account_from_dict(st.secrets["gcp_service_account"])
+        return client.open("TKU_Match_Log").worksheet("CaseMapping")
+    except Exception as e:
+        st.error(f"❌ 無法連線至 Google Sheets: {e}")
+        st.stop()
 
 def load_data():
     try:
