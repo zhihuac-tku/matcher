@@ -3,5 +3,7 @@ pandas
 requests
 lxml
 openpyxl
-gspread
-oauth2client
+gspread==6.1.2
+oauth2client==4.1.3
+google-auth==2.29.0
+urllib3<2.0.0
