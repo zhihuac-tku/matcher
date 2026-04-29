@@ -1,8 +1,7 @@
 streamlit
 pandas
 requests
+supabase
 lxml
 openpyxl
-gspread==5.12.4
-google-auth==2.20.0
 urllib3<2.0.0
