@@ -13,6 +13,9 @@ SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+tz = pytz.timezone("Asia/Taipei")
+now = datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S')
+
 # =======================
 # Streamlit 設定
 # =======================
@@ -131,7 +134,20 @@ def fetch_and_clean_schedule(url):
         # 👉 很重要：把錯誤印出來
         st.error(f"抓課表錯誤: {e}")
         return None
-
+        
+college_map = {
+    "文學院": ["資圖系", "中文系", "歷史系", "資傳系", "大傳系"],
+    "理學院": ["尖端材料科學學程", "化學系", "數學系", "物理系", "應用科學博士班"],
+    "工學院": ["建築系", "機械系", "土木系", "化材系", "資工系", "航太系", "電機系", "水環系"],
+    "商管學院": ["會計系", "財金系", "企管系", "國企系", "管科系", "資管系", "風保系", "公行系", "運管系", "經濟系", "統計系"],
+    "外國語文學院": ["日文系", "英文系", "歐語系"],
+    "國際事務學院": ["觀光系", "外交系", "政經系", "戰略所"],
+    "教育學院": ["教心所", "教設系", "師培中心", "教科系"],
+    "體育事務處": ["學動組"],
+    "教務處": ["通核中心"],
+    "AI創智學院": ["AI系"],
+    "精準健康學院": ["高齡健康所", "智慧照護所"]
+}
 # =======================
 # 媒合邏輯（完全保留）
 # =======================
@@ -201,26 +217,62 @@ if mode == "1. 智慧媒合比對":
         # 👉 委員 A
         with col_sel1:
             st.info("👤 委員A")
-            dept_list_a = sorted(df['科系'].unique())
-            dept_a = st.selectbox("選擇科系 (A)", dept_list_a, key="da")
+        
+            college_a = st.selectbox(
+                "選擇學院 (A)",
+                list(college_map_.keys()),
+                key="college_a"
+            )
+        
+            # 🔥 關鍵：科系只顯示該學院
+            dept_list_a = college_map_[college_a]
+        
+            dept_a = st.selectbox(
+                "選擇科系 (A)",
+                dept_list_a,
+                key="da"
+            )
+        
+            # 👉 再過濾老師
             name_a = st.selectbox(
                 "選擇姓名 (A)",
                 sorted(df[df['科系'] == dept_a]['姓名'].tolist()),
                 key="na"
             )
-            url_a = df[(df['科系'] == dept_a) & (df['姓名'] == name_a)]['連結'].values[0]
+        
+            url_a = df[
+                (df['科系'] == dept_a) &
+                (df['姓名'] == name_a)
+            ]['連結'].values[0]
 
         # 👉 委員 B
         with col_sel2:
             st.info("👤 委員B")
-            dept_list_b = sorted(df['科系'].unique())
-            dept_b = st.selectbox("選擇科系 (B)", dept_list_b, key="db")
+        
+            college_b = st.selectbox(
+                "選擇學院 (B)",
+                list(college_map_.keys()),
+                key="college_b"
+            )
+        
+            dept_list_b = college_map_[college_b]
+        
+            dept_b = st.selectbox(
+                "選擇科系 (B)",
+                dept_list_b,
+                key="db"
+            )
+        
             name_b = st.selectbox(
                 "選擇姓名 (B)",
                 sorted(df[df['科系'] == dept_b]['姓名'].tolist()),
                 key="nb"
             )
-            url_b = df[(df['科系'] == dept_b) & (df['姓名'] == name_b)]['連結'].values[0]
+        
+            url_b = df[
+                (df['科系'] == dept_b) &
+                (df['姓名'] == name_b)
+            ]['連結'].values[0]
 
         # =======================
         # 👉 開始媒合
@@ -357,7 +409,7 @@ else:
             st.success(f"✅ 已帶入案件：{search_id} | 👤 {t_a} & {t_b}")
 
             # 👉 顯示推薦清單（透明化）
-            with st.expander("📋 查看系統推薦時段"):
+            with st.expander("📋 查看系統推薦時段歷史"):
                 for i, s in enumerate(candidate_slots, 1):
                     st.write(f"{i}. {s}")
 
