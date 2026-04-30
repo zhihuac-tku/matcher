@@ -220,7 +220,7 @@ if mode == "1. 智慧媒合比對":
         
             college_a = st.selectbox(
                 "選擇學院 (A)",
-                list(college_map_.keys()),
+                list(college_ma.keys()),
                 key="college_a"
             )
         
@@ -251,7 +251,7 @@ if mode == "1. 智慧媒合比對":
         
             college_b = st.selectbox(
                 "選擇學院 (B)",
-                list(college_map_.keys()),
+                list(college_map.keys()),
                 key="college_b"
             )
         
