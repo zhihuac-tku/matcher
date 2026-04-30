@@ -42,17 +42,14 @@ def load_data():
 def save_mapping(case_id, a, b, slots):
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    supabase.table("case_mapping").insert({
-        "timestamp": now,
-        "case_id": str(case_id),
-        "teacher_a": a,
-        "teacher_b": b,
-        "candidate_slots": ",".join(slots[:6]),
-        "final_day": "",
-        "final_slot": "",
-        "is_recommend": ""
-    }).execute()
-
+    supabase.table("case_mapping") \
+    .update({
+        "final_day": day,
+        "final_slot": slot,
+        "is_recommend": is_rec
+    }) \
+    .eq("case_id", case_id) \
+    .execute()
 
 def save_final(case_id, a, b, slots, day, slot, is_rec):
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
