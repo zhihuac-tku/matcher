@@ -109,7 +109,7 @@ def fetch_and_clean_schedule(url):
         }
 
         # 👉 用 session 取代 requests.get
-        response = session.get(url, headers=headers, timeout=10)
+        response = session.get(url, headers=headers, timeout=100)
         response.encoding = 'utf-8'
 
         # 🔍 Debug（建議先保留）
