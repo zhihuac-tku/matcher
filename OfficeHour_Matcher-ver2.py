@@ -58,6 +58,7 @@ def save_final(case_id, a, b, slots, day, slot, is_rec):
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     supabase.table("case_mapping").upsert({
+        "timestamp": now,
         "case_id": case_id,
         "teacher_a": a,
         "teacher_b": b,
