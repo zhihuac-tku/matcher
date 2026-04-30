@@ -457,10 +457,20 @@ else:
                 final_day = st.selectbox("選擇星期", ["一","二","三","四","五"])
 
             with col2:
-                final_slot = st.text_input(
-                    "輸入時段",
-                    placeholder="例：14:10 ~ 15:00"
+                time_options = [f"第{k}節 {v}" for k, v in TIME_MAP.items()]
+                chosen_time = st.selectbox(
+                    "選擇時段",
+                    options=time_options,
+                    index=None,
+                    placeholder="請選擇節次..."
                 )
+                
+                # 將選中的文字存入 final_slot
+                if chosen_time:
+                    # 例如選中 "第2節 (09:10 ~ 10:00)"，我們只存後面的時間或整串
+                    final_slot = chosen_time
+                else:
+                    final_slot = ""
 
             is_recommend = "No"
 
