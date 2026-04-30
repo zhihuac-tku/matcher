@@ -313,7 +313,7 @@ if mode == "1. 智慧媒合比對":
                         save_mapping(case_id, name_a, name_b, results)
                         st.toast(f"✅ 案件 {case_id} 已儲存", icon="☁️")
                     except Exception as e:
-                        st.error(f"❌ 寫入失敗：{e}")
+                        st.error(f"❌ 寫入失敗：請確認案件流水號是否輸入正確。{e}")
 
                 # =======================
                 # 👉 推薦 UI
