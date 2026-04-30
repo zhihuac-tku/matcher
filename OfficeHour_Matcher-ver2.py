@@ -55,10 +55,9 @@ def save_mapping(case_id, a, b, slots):
 
 
 def save_final(case_id, a, b, slots, day, slot, is_rec):
-    now_iso = datetime.now(pytz.timezone("Asia/Taipei")).isoformat()
 
     supabase.table("case_mapping").upsert({
-        "timestamp": now_iso,
+        "timestamp": original_timestamp,
         "case_id": case_id,
         "teacher_a": a,
         "teacher_b": b,
@@ -480,9 +479,12 @@ else:
             if not final_slot:
                 st.error("❌ 請填寫或選擇時段")
                 st.stop()
-
+                
+            original_ts = str(row["timestamp"])
+            
             try:
                 save_final(
+                    original_ts,
                     search_id,
                     t_a,
                     t_b,
