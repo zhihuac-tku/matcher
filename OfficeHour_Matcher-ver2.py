@@ -220,7 +220,7 @@ if mode == "1. 智慧媒合比對":
         
             college_a = st.selectbox(
                 "選擇學院 (A)",
-                list(college_ma.keys()),
+                list(college_map.keys()),
                 key="college_a"
             )
         
