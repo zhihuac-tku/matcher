@@ -482,11 +482,8 @@ else:
                 
             original_ts = str(row["timestamp"])
             
-            try:
-                original_ts = str(row["timestamp"])
-                
+            try:    
                 save_final(
-                    original_ts,
                     search_id,
                     t_a,
                     t_b,
