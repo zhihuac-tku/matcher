@@ -188,107 +188,263 @@ if mode == "1. 智慧媒合比對":
 
     st.title("教師駐校時間媒合系統")
 
-    case_id = st.text_input("書審流水號")
-    file = st.file_uploader("上傳老師 Excel", type=["xlsx"])
+    case_id = st.text_input("📑 請輸入書審案件流水號", placeholder="例如：II11301")
+    file = st.file_uploader("1️⃣ 上傳老師名單 (Excel)", type=["xlsx"])
 
     if file:
         df = pd.read_excel(file)
         df['科系'] = df['科系'].fillna('未分類')
         df['姓名'] = df['姓名'].fillna('未知')
 
-        col1, col2 = st.columns(2)
+        col_sel1, col_sel2 = st.columns(2)
 
-        with col1:
-            dept_a = st.selectbox("A科系", sorted(df['科系'].unique()))
-            name_a = st.selectbox("A姓名", df[df['科系']==dept_a]['姓名'])
-            url_a = df[(df['科系']==dept_a)&(df['姓名']==name_a)]['連結'].values[0]
+        # 👉 委員 A
+        with col_sel1:
+            st.info("👤 委員A")
+            dept_list_a = sorted(df['科系'].unique())
+            dept_a = st.selectbox("選擇科系 (A)", dept_list_a, key="da")
+            name_a = st.selectbox(
+                "選擇姓名 (A)",
+                sorted(df[df['科系'] == dept_a]['姓名'].tolist()),
+                key="na"
+            )
+            url_a = df[(df['科系'] == dept_a) & (df['姓名'] == name_a)]['連結'].values[0]
 
-        with col2:
-            dept_b = st.selectbox("B科系", sorted(df['科系'].unique()))
-            name_b = st.selectbox("B姓名", df[df['科系']==dept_b]['姓名'])
-            url_b = df[(df['科系']==dept_b)&(df['姓名']==name_b)]['連結'].values[0]
+        # 👉 委員 B
+        with col_sel2:
+            st.info("👤 委員B")
+            dept_list_b = sorted(df['科系'].unique())
+            dept_b = st.selectbox("選擇科系 (B)", dept_list_b, key="db")
+            name_b = st.selectbox(
+                "選擇姓名 (B)",
+                sorted(df[df['科系'] == dept_b]['姓名'].tolist()),
+                key="nb"
+            )
+            url_b = df[(df['科系'] == dept_b) & (df['姓名'] == name_b)]['連結'].values[0]
 
-        if st.button("開始媒合"):
+        # =======================
+        # 👉 開始媒合
+        # =======================
+        if st.button("⚡ 開始媒合"):
 
-            st.write("👉 按鈕有觸發")  # DEBUG 1
-        
             if not case_id:
-                st.warning("⚠️ 請輸入案件流水號")
+                st.warning("⚠️ 請先輸入『案件流水號』")
                 st.stop()
-        
-            st.write("👉 開始抓課表")  # DEBUG 2
-        
-            df_a = fetch_and_clean_schedule(url_a)
-            df_b = fetch_and_clean_schedule(url_b)
-        
-            if df_a is None or df_b is None:
-                st.error("❌ 抓不到課表（網址可能錯）")
-                st.stop()
-        
-            st.write("👉 課表抓成功")  # DEBUG 3
-        
-            results = find_all_slots(df_a, df_b)
-        
-            st.write("👉 媒合結果：", results)  # DEBUG 4
-        
-            if results:
-                try:
-                    save_mapping(case_id, name_a, name_b, results)
-                    st.success("✅ 已寫入 Supabase")
-                except Exception as e:
-                    st.error(f"❌ Supabase 寫入失敗：{e}")
+
+            with st.spinner("正在分析課表..."):
+                df_a = fetch_and_clean_schedule(url_a)
+                df_b = fetch_and_clean_schedule(url_b)
+
+            if df_a is not None and df_b is not None:
+
+                results = find_all_slots(df_a, df_b)
+
+                # 👉 寫入 Supabase
+                if results:
+                    try:
+                        save_mapping(case_id, name_a, name_b, results)
+                        st.toast(f"✅ 案件 {case_id} 已儲存", icon="☁️")
+                    except Exception as e:
+                        st.error(f"❌ 寫入失敗：{e}")
+
+                # =======================
+                # 👉 推薦 UI（回來了🔥）
+                # =======================
+                st.subheader("💡 系統推薦：最佳媒合時段 Top 3")
+
+                top_3 = results[:3]
+                other_3 = results[3:6]
+
+                if top_3:
+                    cols = st.columns(len(top_3))
+                    for i, slot in enumerate(top_3):
+                        cols[i].success(f"🏆 推薦順位 {i+1}\n\n**{slot}**")
+
+                    if other_3:
+                        st.markdown("---")
+                        st.subheader("📋 其他可參考時段")
+
+                        cols2 = st.columns(len(other_3))
+                        for i, slot in enumerate(other_3):
+                            cols2[i].info(f"📍 備選 {i+1}\n\n**{slot}**")
+
+                else:
+                    st.warning("⚠️ 沒有共同時段")
+
+                # =======================
+                # 👉 🔥 這就是你要的 table（重點）
+                # =======================
+                st.divider()
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    st.caption(f"📊 {name_a} 老師課表")
+                    st.dataframe(df_a, use_container_width=True, hide_index=True)
+
+                with col2:
+                    st.caption(f"📊 {name_b} 老師課表")
+                    st.dataframe(df_b, use_container_width=True, hide_index=True)
+
             else:
-                st.warning("⚠️ 沒有共同時段")
+                st.error("❌ 課表讀取失敗（請檢查網址）")
 
 # =======================
 # 第二階段
 # =======================
+# =======================
+# 第二階段（完整版 + Supabase）
+# =======================
 else:
 
-    st.title("最終結果登記")
+    st.title("✍️ 會議安排時段回饋")
 
+    # -------------------------------
+    # 1. 讀取資料
+    # -------------------------------
     df_all = load_data()
 
+    df_mapping = pd.DataFrame()
+    case_options = ["請選擇流水號..."]
+
     if not df_all.empty:
+        try:
+            df_all = df_all.sort_values("timestamp")
 
-        df_all = df_all.sort_values("timestamp")
+            # 👉 mapping / final 分流
+            df_map = df_all[df_all["final_day"] == ""].groupby("case_id").tail(1)
+            df_final = df_all[df_all["final_day"] != ""].groupby("case_id").tail(1)
 
-        df_map = df_all[df_all["final_day"] == ""].groupby("case_id").tail(1)
-        df_final = df_all[df_all["final_day"] != ""].groupby("case_id").tail(1)
-
-        df_mapping = pd.merge(
-            df_map,
-            df_final[["case_id","final_day","final_slot","is_recommend"]],
-            on="case_id",
-            how="left"
-        )
-
-        case_list = df_mapping["case_id"].tolist()
-    else:
-        case_list = []
-
-    search = st.selectbox("選案件", ["請選擇"] + case_list)
-
-    if search != "請選擇":
-
-        row = df_mapping[df_mapping["case_id"] == search].iloc[0]
-
-        slots = row["candidate_slots"].split(",")
-
-        choice = st.selectbox("推薦時段", slots)
-
-        if st.button("提交"):
-
-            parts = choice.split(" ")
-
-            save_final(
-                search,
-                row["teacher_a"],
-                row["teacher_b"],
-                slots,
-                parts[0].replace("星期",""),
-                parts[1],
-                "Yes"
+            # 👉 merge
+            df_mapping = pd.merge(
+                df_map,
+                df_final[["case_id","final_day","final_slot","is_recommend"]],
+                on="case_id",
+                how="left"
             )
 
-            st.success("完成")
+            if not df_mapping.empty:
+                case_list = df_mapping["case_id"].astype(str).tolist()
+                case_options = ["請選擇流水號..."] + case_list[::-1]
+
+        except Exception as e:
+            st.error(f"讀取資料失敗: {e}")
+
+    # -------------------------------
+    # 2. 選案件
+    # -------------------------------
+    search_id = st.selectbox(
+        "🔍 選擇書審案件流水號",
+        options=case_options,
+        key="case_select"
+    )
+
+    t_a, t_b = "未知", "未知"
+    candidate_slots = []
+
+    if search_id != "請選擇流水號..." and not df_mapping.empty:
+
+        match = df_mapping[df_mapping["case_id"].astype(str) == str(search_id)]
+
+        if not match.empty:
+            row = match.iloc[0]
+
+            t_a = str(row["teacher_a"])
+            t_b = str(row["teacher_b"])
+            raw_slots = str(row["candidate_slots"])
+            candidate_slots = [s.strip() for s in raw_slots.split(",") if s.strip()]
+
+            st.success(f"✅ 已帶入案件：{search_id} | 👤 {t_a} & {t_b}")
+
+            # 👉 顯示推薦清單（透明化）
+            with st.expander("📋 查看系統推薦時段"):
+                for i, s in enumerate(candidate_slots, 1):
+                    st.write(f"{i}. {s}")
+
+            # 👉 已填結果顯示
+            if pd.notna(row.get("final_slot")) and row.get("final_slot") != "":
+                st.info(f"📌 已登記結果：星期{row['final_day']} {row['final_slot']}")
+
+    st.divider()
+
+    # -------------------------------
+    # 3. 輸入模式
+    # -------------------------------
+    input_mode = st.radio(
+        "請選擇輸入方式",
+        ["從推薦時段中挑選", "手動輸入其他時段"],
+        horizontal=True
+    )
+
+    final_day = ""
+    final_slot = ""
+    is_recommend = "No"
+
+    # -------------------------------
+    # 4. 表單（避免誤觸）
+    # -------------------------------
+    with st.form("final_form"):
+
+        # 👉 推薦模式
+        if input_mode == "從推薦時段中挑選":
+
+            options = ["-- 請選擇推薦時段 --"] + candidate_slots
+
+            chosen = st.selectbox("系統推薦時段", options=options)
+
+            if chosen and "--" not in chosen:
+                parts = chosen.split(" ", 1)
+                final_day = parts[0].replace("星期", "")
+                final_slot = parts[1] if len(parts) > 1 else ""
+                is_recommend = "Yes"
+
+        # 👉 手動模式
+        else:
+            col1, col2 = st.columns(2)
+
+            with col1:
+                final_day = st.selectbox("選擇星期", ["一","二","三","四","五"])
+
+            with col2:
+                final_slot = st.text_input(
+                    "輸入時段",
+                    placeholder="例：14:10 ~ 15:00"
+                )
+
+            is_recommend = "No"
+
+        # -------------------------------
+        # 5. 提交
+        # -------------------------------
+        submitted = st.form_submit_button("📤 提交最終結果")
+
+        if submitted:
+
+            # 👉 防呆
+            if search_id == "請選擇流水號...":
+                st.error("❌ 請先選擇案件")
+                st.stop()
+
+            if not final_slot:
+                st.error("❌ 請填寫或選擇時段")
+                st.stop()
+
+            try:
+                save_final(
+                    search_id,
+                    t_a,
+                    t_b,
+                    candidate_slots,
+                    final_day,
+                    final_slot,
+                    is_recommend
+                )
+
+                st.balloons()
+                st.success(f"🎉 案件 {search_id} 已成功更新！")
+
+                # 👉 強制刷新（超重要）
+                st.rerun()
+
+            except Exception as e:
+                st.error(f"❌ 寫入失敗：{e}")
