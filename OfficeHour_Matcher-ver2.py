@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 from supabase import create_client
 from datetime import datetime
+from io import StringIO
 
 # =======================
 # Supabase 初始化
@@ -99,7 +100,7 @@ def fetch_and_clean_schedule(url):
         # st.write("Status:", response.status_code)
         # st.write(response.text[:500])
 
-        dfs = pd.read_html(response.text)
+        dfs = pd.read_html(StringIO(response.text))
 
         target_df = None
         for df in dfs:
