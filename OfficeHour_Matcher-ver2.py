@@ -40,10 +40,10 @@ def load_data():
 
 
 def save_mapping(case_id, a, b, slots):
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    now_iso = datetime.now(pytz.timezone("Asia/Taipei")).isoformat()
 
     supabase.table("case_mapping").insert({
-        "timestamp": now,
+        "timestamp": now_iso,
         "case_id": str(case_id),
         "teacher_a": a,
         "teacher_b": b,
@@ -55,10 +55,10 @@ def save_mapping(case_id, a, b, slots):
 
 
 def save_final(case_id, a, b, slots, day, slot, is_rec):
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    now_iso = datetime.now(pytz.timezone("Asia/Taipei")).isoformat()
 
     supabase.table("case_mapping").upsert({
-        "timestamp": now,
+        "timestamp": now_iso,
         "case_id": case_id,
         "teacher_a": a,
         "teacher_b": b,
