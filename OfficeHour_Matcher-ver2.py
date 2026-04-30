@@ -152,7 +152,7 @@ def fetch_and_clean_schedule(url):
 # 媒合邏輯（完全保留）
 # =======================
 def find_all_slots(df_a, df_b):
-    all_slots = []
+    temp_slots = [] 
     days = ['一','二','三','四','五']
 
     def exclude(t):
@@ -184,13 +184,22 @@ def find_all_slots(df_a, df_b):
                 return v == "" or v == "◎" or ("◎在校研究" in v and len(v) < 10)
 
             if ok(a) and ok(b):
-                all_slots.append(f"星期{d} {slot}")
-
-            if len(all_slots) >= 6:
-                return all_slots
-
-    return all_slots
-
+                # --- 決定排序權重 ---
+                priority = 2 # 預設：空白
+                if "◎在校研究" in a or "◎在校研究" in b:
+                    priority = 0 # 最高優先
+                elif "◎" in a or "◎" in b:
+                    priority = 1 # 次高優先
+                    
+                temp_slots.append({
+                    "priority": priority,
+                    "clean_text": f"星期{d} {slot}"
+                })
+                
+        temp_slots.sort(key=lambda x: x['priority'])
+        final_slots = [item['clean_text'] for item in temp_slots]
+        return final_slots[:6]
+        
 # =======================
 # UI
 # =======================
@@ -307,7 +316,7 @@ if mode == "1. 智慧媒合比對":
                         st.error(f"❌ 寫入失敗：{e}")
 
                 # =======================
-                # 👉 推薦 UI（回來了🔥）
+                # 👉 推薦 UI
                 # =======================
                 st.subheader("💡 系統推薦：最佳媒合時段 Top 3")
 
@@ -460,27 +469,34 @@ else:
         # 👉 手動模式
         else:
             col1, col2 = st.columns(2)
-
             with col1:
-                final_day = st.selectbox("選擇星期", ["一","二","三","四","五"])
-
+                final_day_short = st.selectbox("選擇星期", ["一", "二", "三", "四", "五"])
+            
             with col2:
-                time_options = [f"第{k}節 {v}" for k, v in TIME_MAP.items()]
+                time_options = [f"{k} {v}" for k, v in TIME_MAP.items()]
                 chosen_time = st.selectbox(
-                    "選擇時段",
-                    options=time_options,
-                    index=None,
-                    placeholder="請選擇節次..."
+                    "選擇時段", 
+                    options=time_options, 
+                    index=None, 
+                    placeholder="請選擇時段..."
                 )
-                
-                # 將選中的文字存入 final_slot
-                if chosen_time:
-                    # 例如選中 "第2節 (09:10 ~ 10:00)"，我們只存後面的時間或整串
-                    final_slot = chosen_time
-                else:
-                    final_slot = ""
 
-            is_recommend = "No"
+                final_slot = chosen_time if chosen_time else ""
+
+            # 🔥 動態判斷：還原完整的推薦格式進行比對
+            if final_day_short and final_slot:
+                current_selection = f"星期{final_day_short} {final_slot}"
+                
+                # 比對是否在第一階段產生的 candidate_slots (List) 中
+                if current_selection in candidate_slots:
+                    is_recommend = "Yes"
+                else:
+                    is_recommend = "No"
+                
+                # 為了寫入資料庫，我們將 final_day 設定為 "五" 或 "星期五" 視你資料庫需求
+                final_day = final_day_short 
+            else:
+                is_recommend = "No"
 
         # -------------------------------
         # 5. 提交
