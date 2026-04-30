@@ -196,9 +196,9 @@ def find_all_slots(df_a, df_b):
                     "clean_text": f"星期{d} {slot}"
                 })
                 
-        temp_slots.sort(key=lambda x: x['priority'])
-        final_slots = [item['clean_text'] for item in temp_slots]
-        return final_slots[:6]
+    temp_slots.sort(key=lambda x: x['priority'])
+    final_slots = [item['clean_text'] for item in temp_slots]
+    return final_slots[:6]
         
 # =======================
 # UI
