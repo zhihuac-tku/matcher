@@ -312,6 +312,7 @@ if mode == "1. 智慧媒合比對":
                     try:
                         save_mapping(case_id, name_a, name_b, results)
                         st.toast(f"✅ 案件 {case_id} 已儲存", icon="☁️")
+                        st.toast(f"ℹ️ 可直接關閉網頁", icon="🆗"）
                     except Exception as e:
                         st.error(f"❌ 寫入失敗：{e}")
 
@@ -340,7 +341,7 @@ if mode == "1. 智慧媒合比對":
                     st.warning("⚠️ 沒有共同時段")
 
                 # =======================
-                # 👉 🔥 這就是你要的 table（重點）
+                # 👉 🔥 這就是你要的 table
                 # =======================
                 st.divider()
 
@@ -425,7 +426,7 @@ else:
             st.success(f"✅ 已帶入案件：{search_id} | 👤 {t_a} & {t_b}")
 
             # 👉 顯示推薦清單（透明化）
-            with st.expander("📋 查看系統推薦時段歷史"):
+            with st.expander("📋 查看系統推薦歷史"):
                 for i, s in enumerate(candidate_slots, 1):
                     st.write(f"{i}. {s}")
 
@@ -529,6 +530,7 @@ else:
 
                 st.balloons()
                 st.toast(f"✅ 案件 {search_id} 已成功更新！", icon="🎉")
+                st.toast(f"ℹ️ 可直接關閉網頁", icon="🆗"）
 
                 # 👉 強制刷新（超重要）
                 time.sleep(0.5)
