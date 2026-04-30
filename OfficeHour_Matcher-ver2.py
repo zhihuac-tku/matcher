@@ -4,6 +4,7 @@ import requests
 from supabase import create_client
 from datetime import datetime
 from io import StringIO
+import pytz
 
 # =======================
 # Supabase 初始化
