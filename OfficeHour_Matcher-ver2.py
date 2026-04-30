@@ -81,9 +81,24 @@ TIME_MAP = {
 # =======================
 def fetch_and_clean_schedule(url):
     try:
-        headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(url, headers=headers, timeout=10)
+        # 👉 建立 session（模擬瀏覽器）
+        session = requests.Session()
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8",
+            "Referer": "https://www.google.com/",
+            "Connection": "keep-alive"
+        }
+
+        # 👉 用 session 取代 requests.get
+        response = session.get(url, headers=headers, timeout=10)
         response.encoding = 'utf-8'
+
+        # 🔍 Debug（建議先保留）
+        # st.write("Status:", response.status_code)
+        # st.write(response.text[:500])
+
         dfs = pd.read_html(response.text)
 
         target_df = None
@@ -92,24 +107,28 @@ def fetch_and_clean_schedule(url):
                 target_df = df
                 break
 
-        if target_df is None:
-            return None
+        if target_df is not None:
+            df_clean = target_df.iloc[:, :8].copy()
+            df_clean.columns = ['節次', '一', '二', '三', '四', '五', '六', '日']
+            df_clean = df_clean.fillna('').astype(str)
 
-        df_clean = target_df.iloc[:, :8].copy()
-        df_clean.columns = ['節次','一','二','三','四','五','六','日']
-        df_clean = df_clean.fillna('').astype(str)
+            df_clean = df_clean[df_clean['節次'].str.contains('第|\\d', na=False)].reset_index(drop=True)
 
-        df_clean = df_clean[df_clean['節次'].str.contains('第|\\d', na=False)].reset_index(drop=True)
+            def add_time_info(slot_text):
+                st_clean = slot_text.strip().replace("第", "").replace("節", "")
+                if st_clean in TIME_MAP:
+                    return f"{slot_text} {TIME_MAP[st_clean]}"
+                return slot_text
 
-        def add_time(x):
-            k = x.strip().replace("第","").replace("節","")
-            return f"{x} {TIME_MAP.get(k,'')}" if k in TIME_MAP else x
+            df_clean['節次'] = df_clean['節次'].apply(add_time_info)
 
-        df_clean['節次'] = df_clean['節次'].apply(add_time)
+            return df_clean
 
-        return df_clean
+        return None
 
-    except:
+    except Exception as e:
+        # 👉 很重要：把錯誤印出來
+        st.error(f"抓課表錯誤: {e}")
         return None
 
 # =======================
