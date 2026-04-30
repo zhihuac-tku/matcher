@@ -225,7 +225,7 @@ if mode == "1. 智慧媒合比對":
             )
         
             # 🔥 關鍵：科系只顯示該學院
-            dept_list_a = college_map_[college_a]
+            dept_list_a = college_map[college_a]
         
             dept_a = st.selectbox(
                 "選擇科系 (A)",
@@ -255,7 +255,7 @@ if mode == "1. 智慧媒合比對":
                 key="college_b"
             )
         
-            dept_list_b = college_map_[college_b]
+            dept_list_b = college_map[college_b]
         
             dept_b = st.selectbox(
                 "選擇科系 (B)",
