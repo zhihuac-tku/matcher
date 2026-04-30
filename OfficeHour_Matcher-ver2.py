@@ -190,35 +190,35 @@ if mode == "1. 智慧媒合比對":
 
         if st.button("開始媒合"):
 
-    st.write("👉 按鈕有觸發")  # DEBUG 1
-
-    if not case_id:
-        st.warning("⚠️ 請輸入案件流水號")
-        st.stop()
-
-    st.write("👉 開始抓課表")  # DEBUG 2
-
-    df_a = fetch_and_clean_schedule(url_a)
-    df_b = fetch_and_clean_schedule(url_b)
-
-    if df_a is None or df_b is None:
-        st.error("❌ 抓不到課表（網址可能錯）")
-        st.stop()
-
-    st.write("👉 課表抓成功")  # DEBUG 3
-
-    results = find_all_slots(df_a, df_b)
-
-    st.write("👉 媒合結果：", results)  # DEBUG 4
-
-    if results:
-        try:
-            save_mapping(case_id, name_a, name_b, results)
-            st.success("✅ 已寫入 Supabase")
-        except Exception as e:
-            st.error(f"❌ Supabase 寫入失敗：{e}")
-    else:
-        st.warning("⚠️ 沒有共同時段")
+            st.write("👉 按鈕有觸發")  # DEBUG 1
+        
+            if not case_id:
+                st.warning("⚠️ 請輸入案件流水號")
+                st.stop()
+        
+            st.write("👉 開始抓課表")  # DEBUG 2
+        
+            df_a = fetch_and_clean_schedule(url_a)
+            df_b = fetch_and_clean_schedule(url_b)
+        
+            if df_a is None or df_b is None:
+                st.error("❌ 抓不到課表（網址可能錯）")
+                st.stop()
+        
+            st.write("👉 課表抓成功")  # DEBUG 3
+        
+            results = find_all_slots(df_a, df_b)
+        
+            st.write("👉 媒合結果：", results)  # DEBUG 4
+        
+            if results:
+                try:
+                    save_mapping(case_id, name_a, name_b, results)
+                    st.success("✅ 已寫入 Supabase")
+                except Exception as e:
+                    st.error(f"❌ Supabase 寫入失敗：{e}")
+            else:
+                st.warning("⚠️ 沒有共同時段")
 
 # =======================
 # 第二階段
