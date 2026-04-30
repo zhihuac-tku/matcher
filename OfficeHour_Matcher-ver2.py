@@ -504,9 +504,10 @@ else:
                 )
 
                 st.balloons()
-                st.success(f"🎉 案件 {search_id} 已成功更新！")
+                st.toast(f"✅ 案件 {search_id} 已成功更新！", icon="🎉")
 
                 # 👉 強制刷新（超重要）
+                time.sleep(0.5)
                 st.rerun()
 
             except Exception as e:
