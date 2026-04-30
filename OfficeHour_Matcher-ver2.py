@@ -53,19 +53,19 @@ def save_mapping(case_id, a, b, slots):
         "is_recommend": ""
     }).execute()
 
-
 def save_final(case_id, a, b, slots, day, slot, is_rec):
+    now_iso = datetime.now(pytz.timezone("Asia/Taipei")).isoformat()
 
     supabase.table("case_mapping").upsert({
-        "timestamp": original_timestamp,
-        "case_id": case_id,
+        "case_id": str(case_id),       
+        "timestamp": now_iso,        
         "teacher_a": a,
         "teacher_b": b,
         "candidate_slots": ",".join(slots),
         "final_day": day,
         "final_slot": slot,
         "is_recommend": is_rec
-    }).execute()
+    }, on_conflict="case_id").execute() 
 
 # =======================
 # 節次時間
