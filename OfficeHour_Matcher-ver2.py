@@ -312,7 +312,6 @@ if mode == "1. 智慧媒合比對":
                     try:
                         save_mapping(case_id, name_a, name_b, results)
                         st.toast(f"✅ 案件 {case_id} 已儲存", icon="☁️")
-                        st.success("案件儲存完成，可直接關閉網頁🆗")
                     except Exception as e:
                         st.error(f"❌ 寫入失敗：{e}")
 
@@ -354,7 +353,9 @@ if mode == "1. 智慧媒合比對":
                 with col2:
                     st.caption(f"📊 {name_b} 老師課表")
                     st.dataframe(df_b, use_container_width=True, hide_index=True)
-
+                    
+                st.success("案件已儲存完成，可直接關閉網頁🆗")
+                
             else:
                 st.error("❌ 課表讀取失敗（請檢查網址）")
 
