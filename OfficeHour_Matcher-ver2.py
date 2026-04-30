@@ -312,7 +312,7 @@ if mode == "1. 智慧媒合比對":
                     try:
                         save_mapping(case_id, name_a, name_b, results)
                         st.toast(f"✅ 案件 {case_id} 已儲存", icon="☁️")
-                        st.toast(f"ℹ️ 可直接關閉網頁", icon="🆗"）
+                        st.toast(f"ℹ️ 可直接關閉網頁", icon="🆗")
                     except Exception as e:
                         st.error(f"❌ 寫入失敗：{e}")
 
@@ -530,7 +530,7 @@ else:
 
                 st.balloons()
                 st.toast(f"✅ 案件 {search_id} 已成功更新！", icon="🎉")
-                st.toast(f"ℹ️ 可直接關閉網頁", icon="🆗"）
+                st.toast(f"ℹ️ 可直接關閉網頁", icon="🆗")
 
                 # 👉 強制刷新（超重要）
                 time.sleep(0.5)
