@@ -262,13 +262,20 @@ if mode == "1. 智慧媒合比對":
                 dept_list_b,
                 key="db"
             )
-        
+
+            full_list_b = df[df['科系'] == dept_b]['姓名'].tolist()
+            filtered_list_b = [name for name in full_list_b if name != name_a]
+            
             name_b = st.selectbox(
                 "選擇姓名 (B)",
-                sorted(df[df['科系'] == dept_b]['姓名'].tolist()),
+                sorted(filtered_list_b),
                 key="nb"
             )
-        
+
+            if not filtered_list_b:
+                st.error("⚠️ 此科系已無其他可選委員")
+                st.stop()
+                
             url_b = df[
                 (df['科系'] == dept_b) &
                 (df['姓名'] == name_b)
